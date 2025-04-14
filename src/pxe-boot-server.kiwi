@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OBS-ExclusiveArch: x86_64 -->
+<!-- OBS-Profiles: @BUILD_FLAVOR@ -->
+
+<image schemaversion="7.5" name="pxe-boot-server" displayname="Live PXE boot server">
+    <description type="system">
+        <author>lslezak</author>
+        <contact>lslezak</contact>
+        <specification>PXE boot server Live ISO</specification>
+    </description>
+    <profiles>
+        <profile name="openSUSE" description="openSUSE PXE boot server" import="true" />
+        <profile name="SUSE_SLE_16" description="SUSE SLE16 PXE boot server" import="true" />
+    </profiles>
+    <preferences>
+        <version>0.0.1</version>
+        <packagemanager>zypper</packagemanager>
+        <locale>en_US</locale>
+        <keytable>us</keytable>
+        <timezone>Europe/Berlin</timezone>
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <rpm-check-signatures>false</rpm-check-signatures>
+        <bootsplash-theme>bgrt</bootsplash-theme>
+        <bootloader-theme>openSUSE</bootloader-theme>
+    </preferences>
+    <!-- the ISO Volume ID is set by the fix_bootconfig script -->
+    <preferences arch="x86_64" profiles="openSUSE,SUSE_SLE_16">
+        <type image="iso" flags="dmsquash" firmware="uefi" kernelcmdline="loglevel=4 rd.live.overlay.overlayfs=1" mediacheck="true" publisher="SUSE LLC" volid="PXE_BOOT_SERVER">
+            <bootloader name="grub2" timeout="10"/>
+        </type>
+    </preferences>
+    <users>
+        <!-- the password is configured during boot -->
+        <user password="!*" home="/root" name="root" groups="root"/>
+    </users>
+    <repository type="rpm-md">
+        <source path="obsrepositories:/"/>
+    </repository>
+
+    <!-- common set of packages (SSH-based and remote installation, etc.) -->
+    <packages type="image">
+        <package name="avahi"/>
+        <package name="darkhttpd"/>
+        <package name="bind-utils"/>
+        <package name="systemd"/>
+        <package name="procps"/>
+        <package name="iputils"/>
+        <package name="iptables"/>
+        <package name="grub2"/>
+        <package name="grub2-x86_64-efi" arch="x86_64"/>
+        <package name="grub2-i386-pc" arch="x86_64"/>
+        <package name="syslinux" arch="x86_64"/>
+        <package name="openssh"/>
+        <package name="iproute2"/>
+        <package name="less"/>
+        <package name="bash-completion"/>
+        <package name="which"/>
+        <package name="kernel-default"/>
+        <package name="systemd-zram-service"/> <!--- needed for zram -->
+        <package name="shim" arch="aarch64,x86_64"/>
+        <package name="dracut-kiwi-live"/>
+        <package name="NetworkManager"/>
+        <package name="NetworkManager-dns-dnsmasq"/>
+        <package name="NetworkManager-tui"/>
+        <package name="psmisc"/>
+        <package name="joe"/>
+        <package name="checkmedia"/>
+        <package name="jq"/>
+        <!-- just for running the cleanup scripts -->
+        <package name="ruby" />
+        <package name="curl" />
+        <package name="tar" />
+        <package name="squashfs" />
+        <archive name="live-root.tar.xz"/>
+    </packages>
+
+    <!-- additional packages for the openSUSE distributions -->
+    <packages type="image" profiles="openSUSE">
+        <package name="grub2-branding-openSUSE" arch="aarch64,x86_64"/>
+        <package name="openSUSE-repos-Tumbleweed"/>
+        <package name="patterns-openSUSE-base"/>
+        <package name="staging-build-key"/>
+        <package name="openSUSE-build-key"/>
+    </packages>
+    <!-- additional packages for the SLE distributions -->
+    <packages type="image" profiles="SUSE_SLE_16">
+        <package name="grub2-branding-SLE" arch="aarch64,x86_64"/>
+        <package name="patterns-base-base"/>
+        <package name="suse-build-key"/>
+    </packages>
+
+    <packages type="bootstrap">
+        <package name="udev"/>
+        <package name="filesystem"/>
+        <package name="glibc-locale-base"/>
+        <package name="ca-certificates"/>
+        <package name="ca-certificates-mozilla"/>
+    </packages>
+    <packages type="bootstrap" profiles="openSUSE">
+        <package name="openSUSE-release"/>
+        <package name="openSUSE-release-ftp"/>
+    </packages>
+    <packages type="bootstrap" profiles="SUSE_SLE_16">
+        <package name="SLES-release"/>
+    </packages>
+</image>

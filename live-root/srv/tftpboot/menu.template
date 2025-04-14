@@ -1,0 +1,9 @@
+menuentry '%LABEL%' {
+  set gfxpayload=keep
+  echo 'Loading kernel ...'
+  linuxefi %KERNEL% %BOOTPARAMS%
+  echo 'Loading initrd ...'
+  initrdefi %INITRD%
+}
+
+

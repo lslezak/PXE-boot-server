@@ -1,0 +1,8 @@
+# This is an extension of the module.list file specially for PXE boot server. It is loaded
+# in addition to the module.list file to allow extra overrides or hot fixes
+# without touching the original file. The original file should not be touched to
+# allow easy updates from the installation-images repository.
+
+# allow NAT
+kernel/net/ipv4/netfilter
+kernel/net/netfilter

@@ -1,0 +1,30 @@
+[Unit]
+Description=PXE boot server
+
+# after the network is up
+After=network-online.target
+
+# copied from YaST2-Second-Stage.service
+Before=getty@tty1.service
+Before=getty@tty2.service
+Before=getty@tty3.service
+Before=getty@tty4.service
+Before=getty@tty5.service
+Before=getty@tty6.service
+Before=serial-getty@hvc0.service
+Before=serial-getty@sclp_line0.service
+Before=serial-getty@ttyAMA0.service
+Before=serial-getty@ttyS0.service
+Before=serial-getty@ttyS1.service
+Before=serial-getty@ttyS2.service
+Before=serial-getty@ttysclp0.service
+
+
+[Service]
+Type=oneshot
+ExecStart=pxe-server.sh
+RemainAfterExit=true
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

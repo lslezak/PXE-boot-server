@@ -1,0 +1,4 @@
+<multibuild>
+  <flavor>openSUSE</flavor>
+  <flavor>SUSE_SLE_16</flavor>
+</multibuild>

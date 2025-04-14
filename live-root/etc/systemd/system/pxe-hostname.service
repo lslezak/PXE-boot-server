@@ -1,0 +1,16 @@
+[Unit]
+Description=Set hostname
+# after running the default hostname systemd service
+After=systemd-hostnamed.target
+# but before starting the mDNS server
+Before=avahi-daemon.service
+# run only if the hostname has the default value, if it has been changed
+# by the kernel command line or systemd then keep it
+ConditionHost=localhost
+
+[Service]
+ExecStart=hostnamectl hostname --transient pxe-server
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

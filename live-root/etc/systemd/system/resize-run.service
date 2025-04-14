@@ -1,0 +1,14 @@
+[Unit]
+Description=Increase RAM disk size
+
+After=local-fs.target
+
+[Service]
+# for storing the PXE boot images we need lot of space in RAM disk,
+# overlayfs is used for storing the changes in / to /run/overlayfs,
+# resize it to 70% of RAM
+ExecStart=mount -o remount,size=70% /run
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

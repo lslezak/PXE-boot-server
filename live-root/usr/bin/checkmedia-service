@@ -1,0 +1,27 @@
+#! /bin/sh
+
+LIVE_MEDIUM_LABEL="PXE_BOOT_SERVER"
+
+# get the partition where the live ISO is mounted
+disk=$(blkid -L "$LIVE_MEDIUM_LABEL")
+
+if [ -z "$disk" ]; then
+  echo -e "\e[31mPartition \"$LIVE_MEDIUM_LABEL\" not found, skipping media check\e[0m"
+  read -n1 -s -p "Press any key to continue... "
+  echo
+  exit 0
+fi
+
+echo "Checking data integrity of device $disk ($LIVE_MEDIUM_LABEL)..."
+
+if checkmedia -v "$disk"; then
+  echo -e "\e[32mMedium check succeeded\e[0m"
+  read -n1 -s -p "Press any key to continue... "
+  echo
+else
+  echo -e "\e[31mERROR: Medium check failed!\e[0m"
+  echo "The medium is broken, it should not be used."
+  read -n1 -s -p "Press any key to halt the system... "
+  echo
+  halt
+fi
