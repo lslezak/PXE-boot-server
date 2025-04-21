@@ -2,18 +2,22 @@
 
 # This script downloads and installs a PXE image.
 
+set -e
+
 usage () {
   echo "Usage: $0 [options]"
   echo
   echo "Options:"
-  echo "  -d <dir>   - directory where to unpack the archive"
+  echo "  -i         - initialize the root directory, create the required boot files"
+  echo "  -r <root>  - Root directory, the default is /srv/tftpboot"
+  echo "  -d <dir>   - subdirectory where to unpack the archive (relative to root dir)"
   echo "  -u <url>   - PXE image URL (a tar archive)"
   echo "  -l <label> - PXE boot menu label"
   echo "  -h         - print this help"
 }
 
 # process command line arguments
-while getopts ":d:hl:u:" opt; do
+while getopts ":d:h:il:r:u:" opt; do
   case ${opt} in
     d)
       dir="${OPTARG}"
@@ -22,8 +26,14 @@ while getopts ":d:hl:u:" opt; do
       usage
       exit 0
       ;;
+    i)
+      init="1"
+      ;;
     l)
       label="${OPTARG}"
+      ;;
+    r)
+      root="${OPTARG}"
       ;;
     u)
       url="${OPTARG}"
@@ -43,8 +53,89 @@ while getopts ":d:hl:u:" opt; do
   esac
 done
 
-prefix="/srv/tftpboot/"
-path="$prefix$dir"
+if [ -z "$root" ]; then
+  root="/srv/tftpboot"
+fi
+
+bios_menu="$root/pxelinux.cfg/default"
+uefi_menu="$root/grub.cfg"
+
+if [ -n "$init" ]; then
+  # check if the needed files are present
+  if [ ! -e /usr/share/syslinux/pxelinux.0 ] || [ ! -e /usr/share/syslinux/menu.c32 ] || [ ! -e /usr/share/syslinux/chain.c32 ]; then
+    echo "Error: Missing syslinux files, make sure the \"syslinux\" package is installed"
+    exit 1
+  fi
+
+  if [ ! -e /usr/share/efi/x86_64/shim.efi ]; then
+    echo "Error: Missing shim.efi file, make sure the \"shim\" package is installed"
+    exit 1
+  fi
+
+  if [ ! -e /usr/share/grub2/x86_64-efi/grub.efi ]; then
+    echo "Error: Missing grub.efi file, make sure the \"grub2-x86_64-efi\" package is installed"
+    exit 1
+  fi
+
+  # create the target directory
+  echo "Initializing boot configuration at $root..."
+  mkdir -p "$root/pxelinux.cfg"
+
+  # link the PXE boot files from the syslinux package (BIOS boot)
+  ln -s /usr/share/syslinux/{pxelinux.0,menu.c32,chain.c32} "$root"
+
+  # link the PXE boot files from the shim and grub package (UEFI boot)
+  ln -s /usr/share/efi/x86_64/shim.efi "$root/bootx64.efi"
+  ln -s /usr/share/grub2/x86_64-efi/grub.efi "$root"
+
+  # create initial bootloader configurations
+  cat << EOF > "$bios_menu"
+default menu.c32
+timeout 120
+
+MENU TITLE PXE boot menu
+
+LABEL local
+  MENU LABEL Boot from local hard drive
+  localboot 0
+
+LABEL chainlocal
+	MENU LABEL Chain boot to local hard drive
+	KERNEL chain.c32
+	APPEND hd0
+EOF
+
+  cat << EOF > "$uefi_menu"
+gfxmode=auto
+timeout=120
+default=1
+
+locale_dir=grub.locale
+lang=en_US
+
+menuentry "Boot from harddisk" --class exit {
+   chainloader (hd0)+1
+}
+
+EOF
+
+  # only initialization was requested, finish the script
+  if [ -z "$url" ]; then
+    exit 0
+  fi
+fi
+
+if [ -z "$dir" ]; then
+  echo "ERROR: Missing -d option, specify a subdirectory in $root"
+  exit 1
+fi
+
+if [ -z "$url" ]; then
+  echo "ERROR: Missing -u option, specify the image URL"
+  exit 1
+fi
+
+path="$root/$dir"
 
 if [ -e "$path" ]; then
   echo "ERROR: Path $path already exists, exiting to avoid overwriting files"
@@ -100,15 +191,29 @@ echo "Root image:   $image"
 echo "Boot options: $bootparams"
 echo
 
-bios_menu="/srv/tftpboot/pxelinux.cfg/default"
 echo "Updating BIOS boot menu ($bios_menu)"
 
 sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#"  -e "s#%BOOTPARAMS%#$bootparams#"  \
-  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" /srv/tftpboot/pxelinux.cfg/menu.template >> \
-  "$bios_menu"
+  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" << EOF >> "$bios_menu"
+LABEL %DIR%
+  MENU LABEL %LABEL%
+  KERNEL %KERNEL%
+  INITRD %INITRD%
+  APPEND %BOOTPARAMS%
 
-uefi_menu="/srv/tftpboot/grub.cfg"
+
+EOF
+
 echo "Updating UEFI boot menu ($uefi_menu)"
 sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#"  -e "s#%BOOTPARAMS%#$bootparams#"  \
-  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" /srv/tftpboot/menu.template >> \
-  "$uefi_menu"
+  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" << EOF >> "$uefi_menu"
+menuentry '%LABEL%' {
+  set gfxpayload=keep
+  echo 'Loading kernel ...'
+  linuxefi %KERNEL% %BOOTPARAMS%
+  echo 'Loading initrd ...'
+  initrdefi %INITRD%
+}
+
+
+EOF

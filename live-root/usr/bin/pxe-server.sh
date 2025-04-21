@@ -3,6 +3,9 @@
 SERVERSTARTED=""
 SLEEP="10"
 
+# initialize the /srv/tftpboot content
+download-pxe-image.sh -i
+
 while :; do
   echo "Reading NetworkManager configuration..."
   NMDATA=$(nmcli -t d)

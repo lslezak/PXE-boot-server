@@ -33,13 +33,6 @@ systemctl set-default multi-user.target
 # configure the HTTP server
 sed -i -e 's%^DARKHTTPD_PARAMS=.*$%DARKHTTPD_PARAMS="/srv/tftpboot/ --port 80 --syslog"%' /etc/sysconfig/darkhttpd
 
-# link the PXE boot files from the syslinux package (BIOS boot)
-ln -s /usr/share/syslinux/{pxelinux.0,menu.c32,chain.c32} /srv/tftpboot
-
-# link the PXE boot files from the shim and grub package (UEFI boot)
-ln -s /usr/share/efi/x86_64/shim.efi /srv/tftpboot/bootx64.efi
-ln -s /usr/share/grub2/x86_64-efi/grub.efi /srv/tftpboot/grub.efi
-
 ################################################################################
 # Reducing the used space
 #
