@@ -9,15 +9,17 @@ usage () {
   echo
   echo "Options:"
   echo "  -i         - initialize the root directory, create the required boot files"
-  echo "  -r <root>  - Root directory, the default is /srv/tftpboot"
+  echo "  -r <root>  - Root directory (default: /srv/tftpboot)"
   echo "  -d <dir>   - subdirectory where to unpack the archive (relative to root dir)"
-  echo "  -u <url>   - PXE image URL (a tar archive)"
+  echo "  -u <url>   - download URL for the PXE image (a tar archive)"
   echo "  -l <label> - PXE boot menu label"
+  echo "  -s <url>   - Prefix for the image download location (default: http://pxe-server),"
+  echo "               the -d <dir> value is appended"
   echo "  -h         - print this help"
 }
 
 # process command line arguments
-while getopts ":d:h:il:r:u:" opt; do
+while getopts ":d:hil:r:s:u:" opt; do
   case ${opt} in
     d)
       dir="${OPTARG}"
@@ -34,6 +36,9 @@ while getopts ":d:h:il:r:u:" opt; do
       ;;
     r)
       root="${OPTARG}"
+      ;;
+    s)
+      server="${OPTARG}"
       ;;
     u)
       url="${OPTARG}"
@@ -57,6 +62,10 @@ if [ -z "$root" ]; then
   root="/srv/tftpboot"
 fi
 
+if [ -z "$server" ]; then
+  server="http://pxe-server"
+fi
+
 bios_menu="$root/pxelinux.cfg/default"
 uefi_menu="$root/grub.cfg"
 
@@ -78,7 +87,7 @@ if [ -n "$init" ]; then
   fi
 
   # create the target directory
-  echo "Initializing boot configuration at $root..."
+  echo "Initializing boot configuration at $root ..."
   mkdir -p "$root/pxelinux.cfg"
 
   # link the PXE boot files from the syslinux package (BIOS boot)
@@ -103,6 +112,7 @@ LABEL chainlocal
 	MENU LABEL Chain boot to local hard drive
 	KERNEL chain.c32
 	APPEND hd0
+
 EOF
 
   cat << EOF > "$uefi_menu"
@@ -178,7 +188,7 @@ if [ -z "$bootparams" ]; then
 else
   # replace the example image URL with the real server URL
   # the "pxe-server" DNS name is configured in /etc/NetworkManager/dnsmasq-shared.d/pxe-server.conf
-  bootparams=$(echo "$bootparams" | sed -e "s#http://example\.com/image\.xz#http://pxe-server/$dir/$image#" )
+  bootparams="${bootparams//http:\/\/example.com\/image.xz/$server\/$dir\/$image}"
 fi
 
 echo
@@ -192,7 +202,6 @@ echo "Boot options: $bootparams"
 echo
 
 echo "Updating BIOS boot menu ($bios_menu)"
-
 sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#"  -e "s#%BOOTPARAMS%#$bootparams#"  \
   -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" << EOF >> "$bios_menu"
 LABEL %DIR%
