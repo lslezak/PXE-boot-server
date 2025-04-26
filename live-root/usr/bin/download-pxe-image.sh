@@ -109,9 +109,9 @@ LABEL local
   localboot 0
 
 LABEL chainlocal
-	MENU LABEL Chain boot to local hard drive
-	KERNEL chain.c32
-	APPEND hd0
+  MENU LABEL Chain boot to local hard drive
+  KERNEL chain.c32
+  APPEND hd0
 
 EOF
 
@@ -161,6 +161,11 @@ fi
 
 if [ -z "$url" ]; then
   echo "ERROR: Missing -u option, specify the image URL"
+  exit 1
+fi
+
+if [ -z "$label" ]; then
+  echo "ERROR: Missing -l option, specify the boot menu label"
   exit 1
 fi
 
@@ -221,8 +226,8 @@ echo "Boot options: $bootparams"
 echo
 
 echo "Updating BIOS boot menu ($bios_menu)"
-sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#"  -e "s#%BOOTPARAMS%#$bootparams#"  \
-  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" << EOF >> "$bios_menu"
+sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#" -e "s#%BOOTPARAMS%#$bootparams#" \
+  -e "s#%LABEL%#$label#" -e "s#%DIR%#$dir#" << EOF >> "$bios_menu"
 LABEL %DIR%
   MENU LABEL %LABEL%
   KERNEL %KERNEL%
@@ -233,8 +238,8 @@ LABEL %DIR%
 EOF
 
 echo "Updating UEFI boot menu ($uefi_menu)"
-sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#"  -e "s#%BOOTPARAMS%#$bootparams#"  \
-  -e "s#%LABEL%#$label#"  -e "s#%DIR%#$dir#" << EOF >> "$uefi_menu"
+sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#" -e "s#%BOOTPARAMS%#$bootparams#" \
+  -e "s#%LABEL%#$label#" -e "s#%DIR%#$dir#" << EOF >> "$uefi_menu"
 menuentry '%LABEL%' {
   set gfxpayload=keep
   echo 'Loading kernel ...'
