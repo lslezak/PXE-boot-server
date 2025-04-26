@@ -123,8 +123,27 @@ default=1
 locale_dir=grub.locale
 lang=en_US
 
-menuentry "Boot from harddisk" --class exit {
-   chainloader (hd0)+1
+menuentry "UEFI firmware settings" {
+  fwsetup --is-supported
+  if [ "\$?" = 0 ]; then
+    fwsetup
+  else
+    echo "Your firmware doesn't support setup menu entry from a boot loader"
+    echo "Press any key to return ..."
+    read
+  fi
+}
+
+menuentry "Boot from local hard drive" --class opensuse --class gnu-linux --class gnu --class os {
+  if search --no-floppy --file /efi/boot/fallback.efi --set ; then
+    for os in opensuse sles ; do
+      if [ -f /efi/\$os/grub.efi ] ; then
+        chainloader /efi/\$os/grub.efi
+        boot
+      fi
+    done
+  fi
+  exit
 }
 
 EOF
