@@ -7,10 +7,6 @@ SRCDIR = ./src
 # the target directory
 DESTDIR = ./dist
 
-# the default build flavor, see the src/_multibuild file,
-# to build a different flavor run "make build FLAVOR=<flavor>"
-FLAVOR = openSUSE
-
 # the default OBS project,
 # to use a different project run "make build OBS_PROJECT=<project>"
 OBS_PROJECT = "home:lslezak:pxe-boot-server"
@@ -66,7 +62,7 @@ $(DESTDIR)/%.tar.xz: % $$(shell find % -type f,l)
 build: $(DESTDIR)
 	if [ ! -e  $(DESTDIR)/.osc ]; then make clean; osc -A $(OBS_API) co -o $(DESTDIR) $(OBS_PROJECT) $(OBS_PACKAGE); fi
 	$(MAKE) all
-	(cd $(DESTDIR) && osc -A $(OBS_API) build -M $(FLAVOR) $(OSC_OPTS) $(OBS_TARGET) $(ARCH) $(KIWI_FILE))
+	(cd $(DESTDIR) && osc -A $(OBS_API) build $(OSC_OPTS) $(OBS_TARGET) $(ARCH) $(KIWI_FILE))
 
 shellcheck:
 	@find live-root src -type f -exec grep -l -E "^#! *(/usr/|)/bin/(ba|)sh" \{\} \; \
