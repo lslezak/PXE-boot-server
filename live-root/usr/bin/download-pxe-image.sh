@@ -13,14 +13,18 @@ usage () {
   echo "  -d <dir>   - subdirectory where to unpack the archive (relative to root dir)"
   echo "  -u <url>   - download URL for the PXE image (a tar archive)"
   echo "  -l <label> - PXE boot menu label"
-  echo "  -s <url>   - Prefix for the image download location (default: http://pxe-server),"
-  echo "               the -d <dir> value is appended"
+  echo "  -b <opts>  - Append extra boot options"
+  echo "  -s <url>   - Prefix for the image download location,"
+  echo "               the -d <dir> value is appended (default: http://pxe-server)"
   echo "  -h         - print this help"
 }
 
 # process command line arguments
-while getopts ":d:hil:r:s:u:" opt; do
+while getopts ":b:d:hil:r:s:u:" opt; do
   case ${opt} in
+    b)
+      extra_boot_opts="${OPTARG}"
+      ;;
     d)
       dir="${OPTARG}"
       ;;
@@ -232,7 +236,7 @@ LABEL %DIR%
   MENU LABEL %LABEL%
   KERNEL %KERNEL%
   INITRD %INITRD%
-  APPEND %BOOTPARAMS%
+  APPEND %BOOTPARAMS% $extra_boot_opts
 
 
 EOF
@@ -243,7 +247,7 @@ sed -e "s#%KERNEL%#$dir/$kernel#" -e "s#%INITRD%#$dir/$initrd#" -e "s#%BOOTPARAM
 menuentry '%LABEL%' {
   set gfxpayload=keep
   echo 'Loading kernel ...'
-  linuxefi %KERNEL% %BOOTPARAMS%
+  linuxefi %KERNEL% %BOOTPARAMS% $extra_boot_opts
   echo 'Loading initrd ...'
   initrdefi %INITRD%
 }
